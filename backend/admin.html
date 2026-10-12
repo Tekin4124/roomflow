@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toplantı Odası - Admin Panel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+
+  .header { background: #16213e; padding: 20px 32px; border-bottom: 2px solid #0f3460; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 20px; color: #e94560; }
+  .header .status { font-size: 13px; color: #888; }
+  .header .status.ok { color: #4ecca3; }
+
+  .container { max-width: 1080px; margin: 0 auto; padding: 24px 16px; }
+
+  .auth-bar { display: flex; gap: 8px; margin-bottom: 24px; align-items: center; }
+  .auth-bar label { font-size: 13px; color: #aaa; white-space: nowrap; }
+  .auth-bar input { flex: 1; padding: 8px 12px; background: #16213e; border: 1px solid #333; border-radius: 6px; color: #eee; font-size: 14px; }
+  .auth-bar button { padding: 8px 16px; background: #0f3460; border: none; border-radius: 6px; color: #eee; cursor: pointer; font-size: 13px; }
+  .auth-bar button:hover { background: #1a4a8a; }
+
+  .section { background: #16213e; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .section h2 { font-size: 16px; color: #e94560; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .section h2 span { font-size: 12px; color: #666; font-weight: normal; }
+
+  .form-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .form-row input { flex: 1; padding: 8px 12px; background: #1a1a2e; border: 1px solid #333; border-radius: 6px; color: #eee; font-size: 14px; }
+  .form-row input::placeholder { color: #555; }
+
+  .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: background 0.2s; }
+  .btn-add { background: #4ecca3; color: #1a1a2e; }
+  .btn-add:hover { background: #3dbb91; }
+  .btn-del { background: #e94560; color: #fff; padding: 4px 10px; font-size: 12px; }
+  .btn-del:hover { background: #d63050; }
+  .btn-assign { background: #0f3460; color: #eee; padding: 4px 10px; font-size: 12px; }
+  .btn-assign:hover { background: #1a4a8a; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 12px; color: #888; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #333; }
+  td { padding: 10px 12px; border-bottom: 1px solid #222; font-size: 14px; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  .empty { text-align: center; padding: 32px; color: #555; font-size: 14px; }
+  .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; font-size: 13px; z-index: 100; animation: fadeIn 0.3s; }
+  .toast.success { background: #4ecca3; color: #1a1a2e; }
+  .toast.error { background: #e94560; color: #fff; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .device-room-select { padding: 4px 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; color: #eee; font-size: 13px; }
+  .device-name { font-weight: 600; color: #f2f5ff; }
+  .device-meta { display: block; margin-top: 4px; color: #6f7a96; font-size: 12px; }
+
+  .log-actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
+  .log-time { color: #888; font-size: 12px; white-space: nowrap; }
+  .log-msg { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; word-break: break-word; color: #d8dde8; }
+  .log-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .log-badge.warn { background: #f9a826; color: #1a1a2e; }
+  .log-badge.error { background: #e94560; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Toplantı Odası Yönetimi</h1>
+  <div class="status" id="serverStatus">Bağlanıyor...</div>
+</div>
+
+<div class="container">
+
+  <div class="auth-bar">
+    <label>API Key:</label>
+    <input type="password" id="apiKeyInput" placeholder="x-api-key">
+    <button onclick="saveKeys()">Kaydet</button>
+  </div>
+
+  <!-- Odalar -->
+  <div class="section">
+    <h2>Odalar <span id="roomCount"></span></h2>
+    <div class="form-row">
+      <input type="text" id="newRoomName" placeholder="Oda adı">
+      <input type="email" id="newRoomEmail" placeholder="E-posta">
+      <button class="btn btn-add" onclick="addRoom()">Ekle</button>
+    </div>
+    <table>
+      <thead><tr><th>Oda Adı</th><th>E-posta</th><th>Durum</th><th></th></tr></thead>
+      <tbody id="roomsBody"></tbody>
+    </table>
+    <div class="empty" id="roomsEmpty" style="display:none">Henüz oda eklenmemiş.</div>
+  </div>
+
+  <!-- Cihazlar (pasif) — tablet kendi register oluyor, admin atama tablet'in kendi config'i tarafindan eziliyor.
+       Ileride duzeltilirse style="display:none" kaldirilir ve loadAll()'a loadDevices() geri eklenir. -->
+  <div class="section" style="display:none">
+    <h2>Cihazlar <span id="deviceCount"></span></h2>
+    <table>
+      <thead><tr><th>Cihaz</th><th>Atanan Oda</th><th>Oda Değiştir</th><th></th></tr></thead>
+      <tbody id="devicesBody"></tbody>
+    </table>
+    <div class="empty" id="devicesEmpty" style="display:none">Henüz cihaz atanmamış.</div>
+  </div>
+
+  <!-- Son Hatalar -->
+  <div class="section">
+    <h2>Son Hatalar <span id="logCount"></span></h2>
+    <table>
+      <thead><tr><th style="width:140px">Zaman</th><th style="width:70px">Tür</th><th>Mesaj</th></tr></thead>
+      <tbody id="logsBody"></tbody>
+    </table>
+    <div class="empty" id="logsEmpty" style="display:none">Kayıtlı hata yok.</div>
+    <div class="log-actions">
+      <button class="btn btn-assign" onclick="loadLogs()">Yenile</button>
+      <button class="btn btn-del" onclick="clearLogs()">Temizle</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BASE = window.location.origin;
+let apiKey = localStorage.getItem('mrm_api_key') || '';
+let currentRooms = [];
+
+document.getElementById('apiKeyInput').value = apiKey;
+
+function saveKeys() {
+  apiKey = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem('mrm_api_key', apiKey);
+  toast('API key kaydedildi', 'success');
+  loadAll();
+}
+
+function headers() {
+  return { 'Content-Type': 'application/json', 'x-api-key': apiKey };
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: headers() };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'İstek başarısız');
+  return data;
+}
+
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// --- Odalar ---
+async function loadRooms() {
+  try {
+    currentRooms = await api('GET', '/rooms');
+    renderRooms();
+  } catch (e) {
+    document.getElementById('roomsBody').innerHTML = '';
+    document.getElementById('roomsEmpty').style.display = 'block';
+    document.getElementById('roomsEmpty').textContent = 'Yüklenemedi: ' + e.message;
+  }
+}
+
+function renderRooms() {
+  const tbody = document.getElementById('roomsBody');
+  const empty = document.getElementById('roomsEmpty');
+  document.getElementById('roomCount').textContent = currentRooms.length + ' oda';
+
+  if (currentRooms.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'Henüz oda eklenmemiş.';
+    return;
+  }
+
+  empty.style.display = 'none';
+  tbody.innerHTML = currentRooms.map((r) => `
+    <tr>
+      <td>${esc(r.name)}</td>
+      <td>${esc(r.email)}</td>
+      <td id="status-${esc(r.email)}" style="color:#888;font-size:12px">-</td>
+      <td><button class="btn btn-del" data-room="${esc(r.email)}" onclick="deleteRoom(this.dataset.room)">Sil</button></td>
+    </tr>
+  `).join('');
+
+  currentRooms.forEach((r) => loadRoomStatus(r.email));
+}
+
+async function loadRoomStatus(email) {
+  const el = document.getElementById('status-' + email);
+  if (!el) return;
+  try {
+    const s = await api('GET', '/rooms/' + encodeURIComponent(email) + '/status');
+    el.textContent = s.isOccupied ? 'Dolu' : 'Boş';
+    el.style.color = s.isOccupied ? '#e94560' : '#4ecca3';
+  } catch {
+    el.textContent = 'Bilinmiyor';
+  }
+}
+
+async function addRoom() {
+  const name = document.getElementById('newRoomName').value.trim();
+  const email = document.getElementById('newRoomEmail').value.trim();
+  if (!name || !email) return toast('Oda adı ve e-posta gerekli', 'error');
+
+  try {
+    await api('POST', '/admin/rooms', { name, email });
+    document.getElementById('newRoomName').value = '';
+    document.getElementById('newRoomEmail').value = '';
+    toast('Oda eklendi', 'success');
+    loadAll();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function deleteRoom(email) {
+  if (!confirm('Bu odayı silmek istediğinize emin misiniz?')) return;
+  try {
+    await api('DELETE', '/admin/rooms/' + encodeURIComponent(email));
+    toast('Oda silindi', 'success');
+    loadAll();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// --- Cihazlar ---
+async function loadDevices() {
+  try {
+    const devices = await api('GET', '/devices');
+    renderDevices(devices);
+  } catch (e) {
+    document.getElementById('devicesBody').innerHTML = '';
+    const empty = document.getElementById('devicesEmpty');
+    empty.style.display = 'block';
+    empty.textContent = 'Yüklenemedi: ' + e.message;
+  }
+}
+
+function renderDevices(devices) {
+  const tbody = document.getElementById('devicesBody');
+  const empty = document.getElementById('devicesEmpty');
+  document.getElementById('deviceCount').textContent = devices.length + ' cihaz';
+
+  if (devices.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'Henüz cihaz atanmamış.';
+    return;
+  }
+
+  empty.style.display = 'none';
+  const roomOpts = currentRooms.map((r) =>
+    `<option value="${esc(r.email)}">${esc(r.name)}</option>`
+  ).join('');
+
+  tbody.innerHTML = devices.map((d) => `
+    <tr>
+      <td>
+        <span class="device-name">${esc(deviceDisplayName(d))}</span>
+        <span class="device-meta">${esc(shortDeviceId(d.deviceId))}</span>
+      </td>
+      <td>
+        ${esc(roomName(d.roomEmail))}
+        ${d.lastSeenAt ? `<span class="device-meta">Son görülme: ${esc(lastSeenText(d.lastSeenAt))}</span>` : ''}
+      </td>
+      <td>
+        <select class="device-room-select" id="sel-${esc(d.deviceId)}">
+          ${roomOpts}
+        </select>
+        <button class="btn btn-assign" data-device="${esc(d.deviceId)}" onclick="reassignDevice(this.dataset.device)">Ata</button>
+      </td>
+      <td><button class="btn btn-del" data-device="${esc(d.deviceId)}" onclick="deleteDevice(this.dataset.device)">Sil</button></td>
+    </tr>
+  `).join('');
+
+  devices.forEach((d) => {
+    const sel = document.getElementById('sel-' + d.deviceId);
+    if (sel) sel.value = d.roomEmail;
+  });
+}
+
+function roomName(email) {
+  const r = currentRooms.find((r) => r.email === email);
+  return r ? r.name : email;
+}
+
+function shortDeviceId(deviceId) {
+  if (!deviceId) return 'Kimlik yok';
+  if (deviceId.length <= 22) return deviceId;
+  return deviceId.slice(0, 18) + '...';
+}
+
+function deviceDisplayName(device) {
+  return device.label || shortDeviceId(device.deviceId);
+}
+
+function lastSeenText(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+async function reassignDevice(deviceId) {
+  const sel = document.getElementById('sel-' + deviceId);
+  if (!sel) return;
+  try {
+    await api('POST', '/devices/' + encodeURIComponent(deviceId) + '/assign-room', { roomEmail: sel.value });
+    toast('Cihaz atandi', 'success');
+    loadDevices();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function deleteDevice(deviceId) {
+  if (!confirm('Bu cihazı silmek istediğinize emin misiniz?')) return;
+  try {
+    await api('DELETE', '/devices/' + encodeURIComponent(deviceId));
+    toast('Cihaz silindi', 'success');
+    loadDevices();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// --- Loglar ---
+async function loadLogs() {
+  try {
+    const data = await api('GET', '/admin/logs');
+    renderLogs(data.entries || [], data.capacity);
+  } catch (e) {
+    document.getElementById('logsBody').innerHTML = '';
+    const empty = document.getElementById('logsEmpty');
+    empty.style.display = 'block';
+    empty.textContent = 'Yüklenemedi: ' + e.message;
+  }
+}
+
+function renderLogs(entries, capacity) {
+  const tbody = document.getElementById('logsBody');
+  const empty = document.getElementById('logsEmpty');
+  const countEl = document.getElementById('logCount');
+  countEl.textContent = entries.length + (capacity ? ' / ' + capacity : '') + ' kayıt';
+
+  if (entries.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'Kayıtlı hata yok.';
+    return;
+  }
+
+  empty.style.display = 'none';
+  tbody.innerHTML = entries.map((e) => `
+    <tr>
+      <td class="log-time">${esc(formatLogTime(e.timestamp))}</td>
+      <td><span class="log-badge ${esc(e.level)}">${esc((e.level || '').toUpperCase())}</span></td>
+      <td class="log-msg">${esc(e.message)}</td>
+    </tr>
+  `).join('');
+}
+
+function formatLogTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('tr-TR', {
+    day: '2-digit', month: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+}
+
+async function clearLogs() {
+  if (!confirm('Tüm hata kayıtlarını silmek istediğinize emin misiniz?')) return;
+  try {
+    await api('DELETE', '/admin/logs');
+    toast('Kayıtlar silindi', 'success');
+    loadLogs();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// --- Health ---
+async function checkHealth() {
+  const el = document.getElementById('serverStatus');
+  try {
+    const h = await fetch(BASE + '/health').then((r) => r.json());
+    el.textContent = h.status === 'ok' ? 'Sunucu aktif' : 'Sunucu sorunlu';
+    el.className = 'status ' + (h.status === 'ok' ? 'ok' : '');
+  } catch {
+    el.textContent = 'Sunucu erişilemiyor';
+    el.className = 'status';
+  }
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML.replaceAll("'", '&#39;').replaceAll('"', '&quot;');
+}
+
+async function loadAll() {
+  checkHealth();
+  await loadRooms();
+  loadLogs();
+}
+
+fetch('/demo/config').then(r => r.ok ? r.json() : null).then(config => {
+  if (config?.apiKey) { apiKey = config.apiKey; document.getElementById('apiKeyInput').value = apiKey; }
+  loadAll();
+}).catch(() => loadAll());
+</script>
+</body>
+</html>
