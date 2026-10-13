@@ -6,7 +6,7 @@
 
 RoomFlow, oda kapısındaki büyük tablet veya kioskta odanın müsaitlik durumunu, mevcut toplantıyı ve sıradaki rezervasyonu gösterir. Tek geliştirici tarafından geliştirildi; native Android uygulaması, web ekranı, oda yönetim paneli ve Microsoft Graph entegrasyonu kaynakları birlikte paylaşılır.
 
-[Webde dene](https://roomflow.muhammet-tekin.dev) · [Android APK indir](https://github.com/Tekin4124/roomflow/releases/latest) · [Kurulum](#web-ve-yönetim-panelini-çalıştır) · [Katkıda bulun](CONTRIBUTING.md) · [MIT](LICENSE)
+[Takvimi aç](https://roomflow.muhammet-tekin.dev) · [Yönetim paneli](https://roomflow.muhammet-tekin.dev/admin) · [Android APK indir](https://github.com/Tekin4124/roomflow/releases/latest/download/RoomFlow.apk) · [Kurulum](#web-ve-yönetim-panelini-çalıştır) · [Katkıda bulun](CONTRIBUTING.md) · [MIT](LICENSE)
 
 ## Özellikler
 
