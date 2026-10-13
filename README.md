@@ -8,6 +8,21 @@ RoomFlow, oda kapısındaki büyük tablet veya kioskta odanın müsaitlik durum
 
 [Takvimi aç](https://roomflow.muhammet-tekin.dev) · [Yönetim paneli](https://roomflow.muhammet-tekin.dev/admin) · [Android APK indir](https://github.com/Tekin4124/roomflow/releases/latest/download/RoomFlow.apk) · [Kurulum](#web-ve-yönetim-panelini-çalıştır) · [Katkıda bulun](CONTRIBUTING.md) · [MIT](LICENSE)
 
+## Ekran görüntüleri
+
+Örnek oda takviminin iki durumu ve yönetim paneli:
+
+![Meşgul oda](docs/screenshots/mesgul.jpg)
+
+![Müsait oda](docs/screenshots/musait.jpg)
+
+<details><summary>Oda yönetimi</summary>
+
+![Yönetim paneli](docs/screenshots/yonetim.jpg)
+
+</details>
+
+
 ## Özellikler
 
 - Müsait/meşgul durumu, mevcut toplantı, sıradaki toplantı ve boş süre
