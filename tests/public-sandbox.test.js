@@ -47,11 +47,22 @@ test('cross-site requests cannot mutate a visitor session', async () => {
   assert.equal((await request('/api/scenario', a, 'POST', { backendUrl: origin, roomEmail: 'atlas@example.invalid', scenario: 'busy' }, { Origin: 'https://untrusted.example' })).response.status, 403);
   assert.equal((await request('/rooms', a, 'GET', null, { 'Sec-Fetch-Site': 'cross-site' })).response.status, 403);
 });
+// Use node:http: recent fetch implementations overwrite Sec-Fetch-Mode with cors.
+function navigationRequest(path, cookie) {
+  return new Promise((resolve, reject) => {
+    const req = http.get(origin + path, { headers: { Cookie: cookie, 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate' } }, res => {
+      let body = ''; res.setEncoding('utf8'); res.on('data', chunk => body += chunk);
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+  });
+}
 test('admin navigation from an external link works without exposing cross-site API access', async () => {
-  const response = await fetch(origin + '/admin', { headers: { Cookie: a, 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate' } });
-  assert.equal(response.status, 200); assert.match(response.headers.get('content-type'), /text\/html/);
-  const html = await response.text(); assert.match(html, /Bu oturumdaki değişiklikler/); assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
-  assert.equal((await request('/rooms', a, 'GET', null, { 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate' })).response.status, 403);
+  const response = await navigationRequest('/admin', a);
+  assert.equal(response.status, 200); assert.match(response.headers['content-type'], /text\/html/);
+  assert.match(response.body, /Bu oturumdaki değişiklikler/); assert.match(response.headers['content-security-policy'], /frame-ancestors 'none'/);
+  assert.equal((await navigationRequest('/rooms', a)).status, 403);
 });
 test('unknown cookies cannot fixate a session and idle sessions expire', async () => {
   const unknown = 'roomflow_preview=' + 'a'.repeat(64);
