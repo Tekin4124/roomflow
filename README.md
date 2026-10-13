@@ -6,7 +6,7 @@
 
 RoomFlow, oda kapısındaki büyük tablet veya kioskta odanın müsaitlik durumunu, mevcut toplantıyı ve sıradaki rezervasyonu gösterir. Tek geliştirici tarafından geliştirildi; native Android uygulaması, web ekranı, oda yönetim paneli ve Microsoft Graph entegrasyonu kaynakları birlikte paylaşılır.
 
-[Android APK indir](https://github.com/Tekin4124/roomflow/releases/latest) · [Kurulum](#web-ve-yönetim-panelini-çalıştır) · [Katkıda bulun](CONTRIBUTING.md) · [MIT](LICENSE)
+[Webde dene](https://roomflow.muhammet-tekin.dev) · [Android APK indir](https://github.com/Tekin4124/roomflow/releases/latest) · [Kurulum](#web-ve-yönetim-panelini-çalıştır) · [Katkıda bulun](CONTRIBUTING.md) · [MIT](LICENSE)
 
 ## Özellikler
 
@@ -92,7 +92,19 @@ tests/           API entegrasyon ve takvim sınır testleri
 npm test
 ```
 
-Yerel doğrulamada **9 Node testi ve 5 Android testi** geçti; APK derlendi. Fiziksel telefonda yatay ekran, kaydırma ve kontrol alanı kontrol edildi. Gerçek Microsoft tenant bağlantısı ve farklı büyük tablet donanımları ayrıca test edilmelidir.
+Yerel doğrulamada **16 Node testi ve 5 Android testi** geçti; APK derlendi. Fiziksel telefonda yatay ekran, kaydırma ve kontrol alanı kontrol edildi. Gerçek Microsoft tenant bağlantısı ve farklı büyük tablet donanımları ayrıca test edilmelidir.
+
+## Herkese açık örnek ortam
+
+`web-display/server.js`, `PUBLIC_SANDBOX=true` ve `PUBLIC_ORIGIN=https://roomflow.example.invalid` ile ziyaretçiye özel, geçici bir örnek ortam çalıştırabilir. Her tarayıcı HttpOnly/SameSite çereziyle kendi odalarını, takvim senaryosunu, cihazlarını ve işlem kayıtlarını kullanır. Bu mod Graph sağlayıcısını, gerçek backend'i veya disk kayıtlarını yüklemez. Aynı tarayıcıdaki takvim ve `/admin` ekranı aynı örnek oturumu paylaşır.
+
+```sh
+docker compose -p portfolio-roomflow -f deploy/compose.public.yml up --build -d
+```
+
+`deploy/compose.public.yml` içindeki PUBLIC_ORIGIN ve socket dizinini kendi kurulumuna göre değiştir. Container ağ portu yayımlamaz; Caddy aynı sunucudaki özel Unix soketine bağlanır. Socket dizini container kullanıcısına ait olmalı ve proxy kullanıcısının grubunu miras almalıdır. Container ayrı internal Docker ağı kullanır, root olmayan kullanıcıyla ve salt okunur dosya sistemiyle çalışır. Caddy/HTTPS proxy'si önüne konmalıdır; proxy gelen X-Forwarded-For başlığını güvenilir istemci adresiyle değiştirmelidir. Secure çerezleri canlı ortamda kapatma.
+
+Örnek yönetimde yalnız `.invalid` e-postalar kabul edilir. Oda/cihaz/oturum sayıları, oturum süresi, istek boyutu ve istek sıklığı sınırlandırılır. Kayıtlar bellektedir; container yeniden başladığında veya oturum sona erdiğinde silinir. Bu mod gerçek kimlik doğrulaması, canlı takvim veya kalıcı kayıt servisi değildir. APK örnekleri bu web oturumuna bağlanmaz.
 
 ## Yayınlama ve veri sınırı
 

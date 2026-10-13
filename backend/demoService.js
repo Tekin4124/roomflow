@@ -1,4 +1,5 @@
 // All names, addresses and meetings here are synthetic. No external calls.
+function createDemoCalendar() {
 const scenarios = new Map();
 function setScenario(roomEmail, scenario) {
   if (!['busy', 'available', 'empty'].includes(scenario)) {
@@ -23,5 +24,7 @@ function getRoomEvents(roomEmail) {
 async function getRoomStatus(roomEmail) {
   return require('./calendarStatus').buildRoomStatus(roomEmail, await getRoomEvents(roomEmail));
 }
-module.exports = { getRoomEvents, getRoomStatus, setScenario,
+return { getRoomEvents, getRoomStatus, setScenario,
   invalidateRoomEventsCache() {}, getClientSecretExpiryInfo() { return null; } };
+}
+module.exports = { ...createDemoCalendar(), createDemoCalendar };

@@ -1,0 +1,7 @@
+FROM node:24-alpine
+WORKDIR /app
+COPY web-display/ ./web-display/
+COPY backend/admin.html backend/demoService.js backend/calendarStatus.js ./backend/
+USER node
+ENV HOST=0.0.0.0 PORT=8088 PUBLIC_SANDBOX=true
+CMD ["node", "web-display/server.js"]

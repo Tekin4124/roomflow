@@ -5,6 +5,7 @@ const port = Number(process.env.PORT || 8088);
 const host = process.env.HOST || '127.0.0.1';
 const backend = new URL(process.env.BACKEND_URL || 'http://127.0.0.1:3000');
 if (!['http:', 'https:'].includes(backend.protocol) || backend.username || backend.password) throw new Error('Invalid BACKEND_URL');
+const sandbox = process.env.PUBLIC_SANDBOX === 'true' ? require('./public-sandbox').createPublicSandbox({ origin: process.env.PUBLIC_ORIGIN, secureCookies: process.env.SANDBOX_INSECURE_COOKIE !== 'true' }) : null;
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html']], ['/display', ['index.html', 'text/html']], ['/setup', ['index.html', 'text/html']],
   ['/app.js', ['app.js', 'text/javascript']], ['/styles.css', ['styles.css', 'text/css']],
@@ -31,6 +32,8 @@ async function proxy(route, options = {}) {
 const server = http.createServer(async (req, res) => {
   try {
     const pathname = new URL(req.url, 'http://localhost').pathname;
+    if (sandbox && pathname === '/apk' && ['GET','HEAD'].includes(req.method)) { res.writeHead(302, { Location: 'https://github.com/Tekin4124/roomflow/releases/latest/download/RoomFlow.apk' }); res.end(); return; }
+    if (sandbox && await sandbox.handle(req, res)) return;
     if (pathname.startsWith('/api/')) {
       if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}`) return json(res,403,{error:'Origin rejected'});
       if (req.headers['sec-fetch-site'] === 'cross-site') return json(res,403,{error:'Cross-site request rejected'});
@@ -71,4 +74,17 @@ const server = http.createServer(async (req, res) => {
     json(res,502,{error:'Backend unavailable. Start the demo backend and try again.'});
   }
 });
-server.listen(port, host, () => console.log(`RoomFlow web demo: http://${host}:${port}`));
+server.requestTimeout = 15000;
+server.headersTimeout = 10000;
+server.maxHeadersCount = 50;
+async function startServer() {
+  const socket = process.env.SOCKET_PATH;
+  if (socket) {
+    try { await fs.unlink(socket); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    server.listen(socket, async () => {
+      await fs.chmod(socket, 0o660);
+      console.log('RoomFlow preview listening on private Unix socket');
+    });
+  } else server.listen(port, host, () => console.log(`RoomFlow web: http://${host}:${port}`));
+}
+startServer().catch(() => { console.error('RoomFlow listener could not start'); process.exit(1); });

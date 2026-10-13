@@ -1,0 +1,35 @@
+services:
+  roomflow:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.public
+    image: roomflow-public-preview:local
+    restart: unless-stopped
+    environment:
+      PUBLIC_SANDBOX: "true"
+      PUBLIC_ORIGIN: https://roomflow.muhammet-tekin.dev
+      HOST: 0.0.0.0
+      SOCKET_PATH: /run/roomflow/http.sock
+    volumes:
+      - /srv/public-previews/roomflow/run:/run/roomflow
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get({socketPath:process.env.SOCKET_PATH,path:'/api/health'},r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.75
+    networks:
+      - preview
+networks:
+  preview:
+    internal: true

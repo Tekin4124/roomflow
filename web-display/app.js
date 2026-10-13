@@ -86,6 +86,7 @@
     try { demoConfig = await fetch('/api/config').then(r => r.ok ? r.json() : null); } catch (_) {}
     state.demo = demoConfig?.mode === 'demo' && !!demoConfig.apiKey;
     state.demoRooms = demoConfig?.rooms || [];
+    state.publicSandbox = demoConfig?.sandbox === true;
     const queryConfig = null;
     cleanQueryString();
     const demoPreset = state.demo ? { backendUrl: demoConfig.backendUrl, apiKey: demoConfig.apiKey, roomName: demoConfig.rooms[0]?.name, roomEmail: demoConfig.rooms[0]?.email } : null;
@@ -922,6 +923,10 @@
     toolbar.className = 'demo-toolbar';
     toolbar.setAttribute('aria-label', 'Takvim kontrolleri');
     toolbar.innerHTML = `${state.demo ? `<select id="demoRoom" aria-label="Oda">${state.demoRooms.map(room => `<option value="${escapeHtml(room.email)}" ${room.email === config.roomEmail ? 'selected' : ''}>${escapeHtml(room.name)}</option>`).join('')}</select>${[['busy','Dolu'],['available','Müsait'],['empty','Boş takvim']].map(([value,label]) => `<button data-scenario="${value}" aria-pressed="${state.demoScenario === value}">${label}</button>`).join('')}` : ''}<button id="openSettings">Ayarlar</button>`;
+    if (state.publicSandbox) {
+      const admin = document.createElement('a'); admin.href = '/admin'; admin.textContent = 'Yönetim'; toolbar.append(admin);
+      const apk = document.createElement('a'); apk.href = '/apk'; apk.textContent = 'APK indir'; toolbar.append(apk);
+    }
     app.append(toolbar);
     if (state.demo) {
       const note = document.createElement('small');
